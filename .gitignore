@@ -1,0 +1,4 @@
+.local-store.json
+node_modules/
+.vercel/
+.dev-password
