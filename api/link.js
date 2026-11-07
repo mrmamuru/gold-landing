@@ -28,6 +28,9 @@ function json(res, code, obj) {
 }
 
 module.exports = async (req, res) => {
+  if (!process.env.ADMIN_PASSWORD) {
+    return json(res, 500, { error: 'Vercel-এ ADMIN_PASSWORD সেট করা নেই — Settings → Environment Variables এ যোগ করে Redeploy করুন' });
+  }
   if (!authorized(req)) return json(res, 401, { error: 'ভুল পাসওয়ার্ড' });
 
   if (req.method === 'GET') return json(res, 200, { link: await getLink(), auto: await getAuto() });
