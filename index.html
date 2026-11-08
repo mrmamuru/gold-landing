@@ -196,15 +196,22 @@ src="https://www.facebook.com/tr?id=1532517781969694&ev=PageView&noscript=1"></n
   var countEl = document.getElementById('count');
   var gone = false;
 
-  function go() {
+  // manual = user tapped the button → real "Lead" (Meta optimizes on this)
+  // auto   = countdown redirect → separate custom event, NOT counted as Lead
+  function go(manual) {
     if (gone) return; gone = true;
-    try { if (window.fbq) fbq('track', 'Lead'); } catch (e) {}
+    try {
+      if (window.fbq) {
+        if (manual) fbq('track', 'Lead');
+        else fbq('trackCustom', 'AutoRedirect');
+      }
+    } catch (e) {}
     // short delay so the pixel event can send
     setTimeout(function () { window.location.href = '/api/go'; }, 300);
   }
 
   document.querySelectorAll('.js-join').forEach(function (a) {
-    a.addEventListener('click', function (e) { e.preventDefault(); go(); });
+    a.addEventListener('click', function (e) { e.preventDefault(); go(true); });
   });
 
   // show sticky button once the top button scrolls out of view
@@ -219,7 +226,7 @@ src="https://www.facebook.com/tr?id=1532517781969694&ev=PageView&noscript=1"></n
     var left = AUTO_REDIRECT_SECONDS;
     var tick = function () {
       if (gone) return;
-      if (left <= 0) { countEl.textContent = 'WhatsApp খোলা হচ্ছে…'; go(); return; }
+      if (left <= 0) { countEl.textContent = 'WhatsApp খোলা হচ্ছে…'; go(false); return; }
       countEl.innerHTML = '<b>' + left + '</b> সেকেন্ডের মধ্যে অটোমেটিক WhatsApp গ্রুপে নিয়ে যাওয়া হবে…';
       left--; setTimeout(tick, 1000);
     };
