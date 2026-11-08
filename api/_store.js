@@ -43,6 +43,20 @@ async function getLink() {
 }
 const setLink = (link) => setVal('wa_link', link);
 
+// Optional 2nd link — when set, the landing page alternates between link 1 and link 2 every hour
+async function getLink2() { return (await getVal('wa_link2')) || ''; }
+const setLink2 = (link) => setVal('wa_link2', link);
+
+// Which link is live right now: 1 or 2 (switches on every clock hour)
+function activeSlot(hasLink2, now = Date.now()) {
+  return hasLink2 && Math.floor(now / 3600000) % 2 === 1 ? 2 : 1;
+}
+async function getActiveLink() {
+  const [l1, l2] = await Promise.all([getLink(), getLink2()]);
+  if (!l1) return l2;
+  return activeSlot(!!l2) === 2 ? l2 : l1;
+}
+
 // Auto-redirect: default ON when never set
 async function getAuto() {
   const v = await getVal('auto_redirect');
@@ -60,4 +74,4 @@ function isValidWaLink(link) {
   }
 }
 
-module.exports = { getLink, setLink, getAuto, setAuto, isValidWaLink };
+module.exports = { getLink, setLink, getLink2, setLink2, activeSlot, getActiveLink, getAuto, setAuto, isValidWaLink };

@@ -58,7 +58,7 @@
   <!-- Editor -->
   <div id="editBox" class="hidden">
     <h1>WhatsApp লিংক</h1>
-    <p class="sub">নতুন লিংক সেভ করলে সাথে সাথে ল্যান্ডিং পেজে কাজ করবে</p>
+    <p class="sub">সেভ করলে সাথে সাথে ল্যান্ডিং পেজে কাজ করবে। ২টা লিংক দিলে প্রতি ঘণ্টায় পালা করে চলবে।</p>
 
     <div class="toggle">
       <div>
@@ -72,11 +72,16 @@
     </div>
     <div class="msg" id="autoMsg" style="margin-top:-12px;margin-bottom:8px"></div>
 
-    <label for="link">নতুন WhatsApp গ্রুপ লিংক</label>
+    <label for="link">লিংক ১ (WhatsApp গ্রুপ)</label>
     <input id="link" type="url" placeholder="https://chat.whatsapp.com/XXXXXXXX">
+    <label for="link2">লিংক ২ (ঐচ্ছিক — দিলে প্রতি ১ ঘণ্টা পর পর লিংক বদলাবে)</label>
+    <input id="link2" type="url" placeholder="খালি রাখলে শুধু লিংক ১ চলবে">
     <button id="saveBtn">সেভ করুন</button>
     <div class="msg" id="saveMsg"></div>
-    <div class="current">বর্তমান লিংক:<br><a id="cur" href="#" target="_blank" rel="noopener">—</a></div>
+    <div class="current">
+      এখন ল্যান্ডিং পেজে চলছে: <b id="slot">—</b> <span id="next" style="color:var(--muted)"></span><br>
+      <a id="cur" href="#" target="_blank" rel="noopener">—</a>
+    </div>
     <div class="row">
       <button class="ghost" onclick="window.open('/','_blank')">ল্যান্ডিং পেজ দেখুন</button>
       <button class="ghost" id="logoutBtn">লগআউট</button>
@@ -99,19 +104,26 @@
     return data;
   }
 
-  function showCurrent(link) {
-    $('cur').textContent = link || '(এখনো সেট করা হয়নি)';
-    $('cur').href = link || '#';
-    $('link').value = link || '';
+  function showCurrent(d) {
+    const live = d.active === 2 && d.link2 ? d.link2 : (d.link || d.link2);
+    $('cur').textContent = live || '(এখনো সেট করা হয়নি)';
+    $('cur').href = live || '#';
+    $('slot').textContent = d.link2 ? 'লিংক ' + (d.active === 2 ? '২' : '১') : 'লিংক ১';
+    if (d.link2) {
+      const next = new Date(Math.floor(Date.now() / 3600000 + 1) * 3600000);
+      $('next').textContent = '(' + next.toLocaleTimeString('bn-BD', { hour: 'numeric', minute: '2-digit' }) + '-এ বদলাবে)';
+    } else $('next').textContent = '(রোটেশন বন্ধ)';
+    $('link').value = d.link || '';
+    $('link2').value = d.link2 || '';
   }
 
   async function login() {
     $('loginBtn').disabled = true; $('loginMsg').textContent = '';
     try {
-      const { link, auto } = await api('GET');
+      const d = await api('GET');
       try { sessionStorage.setItem('adm', pw); } catch {}
       $('loginBox').classList.add('hidden'); $('editBox').classList.remove('hidden');
-      showCurrent(link); showAuto(auto);
+      showCurrent(d); showAuto(d.auto);
     } catch (e) {
       $('loginMsg').className = 'msg err'; $('loginMsg').textContent = e.message;
       try { sessionStorage.removeItem('adm'); } catch {}
@@ -125,8 +137,8 @@
   $('saveBtn').onclick = async () => {
     $('saveBtn').disabled = true; $('saveMsg').textContent = '';
     try {
-      const { link } = await api('POST', { link: $('link').value });
-      showCurrent(link);
+      const d = await api('POST', { link: $('link').value, link2: $('link2').value });
+      showCurrent(d);
       $('saveMsg').className = 'msg ok'; $('saveMsg').textContent = '✓ সেভ হয়েছে!';
     } catch (e) {
       $('saveMsg').className = 'msg err'; $('saveMsg').textContent = e.message;
